@@ -51,3 +51,6 @@ A struct, short for structure, bundles several variables into one named unit.
 SDL_FRect is a struct for rectangle. 
 
 SDL_Event bundles together the details of every kind of event SDL can report, and event.key is the part that describes a keyboard event. That part is itself a struct, of type SDL_KeyboardEvent, and its key member says which key it was. So event.key.key reaches in two levels: into the event's keyboard part, and then into its key.
+
+
+Quick note: for "import std", it is only available for C++23
