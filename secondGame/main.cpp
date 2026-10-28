@@ -68,7 +68,7 @@ int main(int argc, char *argv[])
         // Bounce off the left and right walls
         if (ball_x - BALL_RADIUS < 0.0f)
         {
-            ball_x = BALL_RADIUS; //Snap back inside
+            ball_x = BALL_RADIUS; // Snap back inside
             BallVelX = -BallVelX; //...then rerverse
         }
         if (ball_x + BALL_RADIUS > WINDOW_WIDTH)
@@ -93,6 +93,8 @@ int main(int argc, char *argv[])
         SDL_RenderFillRect(renderer, &BallRect);
         SDL_RenderPresent(renderer);
     }
-
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
     return 0;
 }
