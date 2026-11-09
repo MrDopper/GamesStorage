@@ -6,6 +6,7 @@ struct Laser
     const float LASER_H = 4.0f;
     static constexpr int MAX_LASERS = 3;
     const int POINTS_PER_HIT = 10;
+    const SDL_Color LASER_COLOUR = {120, 255, 120, 255};
     SDL_FRect rect;
     bool active;
 };

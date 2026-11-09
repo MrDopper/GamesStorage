@@ -5,6 +5,10 @@
  * This game is a one person shooting game.
  * version: 0.0.1;
  * Written: Jackson;
+ * To move the ship, press A,W,S,D.
+ * To shoot, press space.
+ * For each enemies you destroy, you'll get 10 points. If the enemy hits you, you'll lose a life.
+ * You only have 3 lives so try your best to not lose.
  */
 int main(int argc, char *argv[])
 {
@@ -32,23 +36,39 @@ int main(int argc, char *argv[])
     }
     // Show each frame in step with the monitor's refesh
     SDL_SetRenderVSync(renderer, 1);
+    // The whole game: the {} starts every member at zero
+    Game game{};
+    game.resetGame();
+    // The time at the last frame, in miliseconds
+    Uint64 lastTime = SDL_GetTicks();
     bool running = true;
     SDL_Event event;
-    Game game;
     while (running)
     {
+        // Events: the window's X, and key presses (not held-key repeats)
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_EVENT_QUIT)
             {
                 running = false;
             }
-            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE)
+            if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
             {
-                running = false;
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    running = false;
+                }
+            }
+            Uint64 now = SDL_GetTicks();
+            float delta = (now - lastTime) / 1000.0f;
+            lastTime = now;
+            // Update the game, unless it's over
+            if (!game.gameOver)
+            {
+                game.updatePLayer(game.player, delta);
             }
         }
-        game.drawGame(renderer, game);
+        game.drawGame(renderer);
     }
     // Clean up
     SDL_DestroyRenderer(renderer);
