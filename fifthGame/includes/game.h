@@ -19,5 +19,5 @@ struct Game
     // Draw the frame: the background, then the aliens, ship, and lives
     void drawGame(SDL_Renderer *renderer);
     void drawRect(SDL_Renderer *renderer, const SDL_FRect &rect, const SDL_Color &color);
-    void updatePLayer(Player &player, float delta);
+    // void updatePLayer(Player &player, float delta);
 };

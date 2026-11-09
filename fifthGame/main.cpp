@@ -59,14 +59,14 @@ int main(int argc, char *argv[])
                     running = false;
                 }
             }
-            Uint64 now = SDL_GetTicks();
-            float delta = (now - lastTime) / 1000.0f;
-            lastTime = now;
-            // Update the game, unless it's over
-            if (!game.gameOver)
-            {
-                game.updatePLayer(game.player, delta);
-            }
+        }
+        Uint64 now = SDL_GetTicks();
+        float delta = (now - lastTime) / 1000.0f;
+        lastTime = now;
+        // Update the game, unless it's over
+        if (!game.gameOver)
+        {
+            game.player.updatePlayer(delta);
         }
         game.drawGame(renderer);
     }

@@ -22,7 +22,7 @@ void Game::drawGame(SDL_Renderer *renderer)
     SDL_SetRenderDrawColor(renderer, backgroundColour.r, backgroundColour.g, backgroundColour.b, backgroundColour.a);
     SDL_RenderClear(renderer);
     SDL_Color shipColour = gameOver ? player.PLAYER_DIM : player.PLAYER_COLOUR;
-    drawRect(renderer, player.rect, shipColour);
+    drawRect(renderer,player.rect, shipColour);
     // one small square for each life left, int the top left corner
     for (int i = 0; i < player.lives; i++)
     {
@@ -38,25 +38,25 @@ void Game::drawRect(SDL_Renderer *renderer, const SDL_FRect &rect, const SDL_Col
     SDL_RenderFillRect(renderer, &rect);
 }
 
-void Game::updatePLayer(Player &player, float delta)
-{
-    const auto *key = SDL_GetKeyboardState(nullptr);
-    if (key[SDL_SCANCODE_W])
-    {
-        player.rect.y -= player.PLAYER_SPEED * delta;
-    }
-    if (key[SDL_SCANCODE_S])
-    {
-        player.rect.y += player.PLAYER_SPEED * delta;
-    }
-    if (key[SDL_SCANCODE_D])
-    {
-        player.rect.x += player.PLAYER_SPEED * delta;
-    }
-    if (key[SDL_SCANCODE_A])
-    {
-        player.rect.x -= player.PLAYER_SPEED * delta;
-    }
-    player.rect.x = SDL_clamp(player.rect.x, 0.0f, WINDOW_W - player.PLAYER_W);
-    player.rect.y = SDL_clamp(player.rect.y, 0.0f, WINDOW_H - player.PLAYER_H);
-}
+// void Game::updatePLayer(Player &player, float delta)
+// {
+//     const auto *key = SDL_GetKeyboardState(nullptr);
+//     if (key[SDL_SCANCODE_W])
+//     {
+//         player.rect.y -= player.PLAYER_SPEED * delta;
+//     }
+//     if (key[SDL_SCANCODE_S])
+//     {
+//         player.rect.y += player.PLAYER_SPEED * delta;
+//     }
+//     if (key[SDL_SCANCODE_D])
+//     {
+//         player.rect.x += player.PLAYER_SPEED * delta;
+//     }
+//     if (key[SDL_SCANCODE_A])
+//     {
+//         player.rect.x -= player.PLAYER_SPEED * delta;
+//     }
+//     player.rect.x = SDL_clamp(player.rect.x, 0.0f, WINDOW_W - player.PLAYER_W);
+//     player.rect.y = SDL_clamp(player.rect.y, 0.0f, WINDOW_H - player.PLAYER_H);
+// }
