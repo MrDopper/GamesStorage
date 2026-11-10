@@ -9,5 +9,6 @@ struct Laser
     const SDL_Color LASER_COLOUR = {120, 255, 120, 255};
     SDL_FRect rect;
     bool active;
+    //Align the laser with the player
     void fireLaser(const SDL_FRect &playerRect);
 };

@@ -9,6 +9,8 @@
  * To shoot, press space.
  * For each enemies you destroy, you'll get 10 points. If the enemy hits you, you'll lose a life.
  * You only have 3 lives so try your best to not lose.
+ * Press R to reset the game
+ * To run this program use g++ -std=20 -I./include main.cpp src/*.cpp -o game $(pkg-config -cflags --libs sdl3)
  */
 int main(int argc, char *argv[])
 {
