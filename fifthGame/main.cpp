@@ -58,6 +58,14 @@ int main(int argc, char *argv[])
                 {
                     running = false;
                 }
+                else if (event.key.key == SDLK_SPACE && !game.gameOver)
+                {
+                    game.fireLaser();
+                }
+                else if (event.key.key == SDLK_R && game.gameOver)
+                {
+                    game.resetGame();
+                }
             }
         }
         Uint64 now = SDL_GetTicks();
@@ -67,6 +75,10 @@ int main(int argc, char *argv[])
         if (!game.gameOver)
         {
             game.player.updatePlayer(delta);
+            game.updateEnimies(delta);
+            game.updateLaser(delta);
+            game.checkLaserHits();
+            game.checkPlayerhits();
         }
         game.drawGame(renderer);
     }

@@ -8,9 +8,9 @@ void Game::resetGame()
     {
         lasers[i].active = false;
     }
-    for (int i = 0; i < Enimes::MAX_ALIENS; i++)
+    for (int i = 0; i < Enemy::MAX_ENEMY; i++)
     {
-        enimes[i].active = false;
+        enemies[i].active = false;
     }
     score = 0;
     gameOver = false;
@@ -21,8 +21,22 @@ void Game::drawGame(SDL_Renderer *renderer)
     SDL_Color backgroundColour = gameOver ? GAME_OVER_BG : BACKGROUND;
     SDL_SetRenderDrawColor(renderer, backgroundColour.r, backgroundColour.g, backgroundColour.b, backgroundColour.a);
     SDL_RenderClear(renderer);
-    SDL_Color shipColour = gameOver ? player.PLAYER_DIM : player.PLAYER_COLOUR;
-    drawRect(renderer,player.rect, shipColour);
+    for (Enemy &enemy : enemies)
+    {
+        if (enemy.active)
+        {
+            drawRect(renderer, enemy.rect, enemy.ENEMY_COLOR);
+        }
+    }
+    for (Laser &laser : lasers)
+    {
+        if (laser.active)
+        {
+            drawRect(renderer, laser.rect, laser.LASER_COLOUR);
+        }
+    }
+    SDL_Color playerColour = gameOver ? player.PLAYER_DIM : player.PLAYER_COLOUR;
+    drawRect(renderer, player.rect, playerColour);
     // one small square for each life left, int the top left corner
     for (int i = 0; i < player.lives; i++)
     {
@@ -37,26 +51,92 @@ void Game::drawRect(SDL_Renderer *renderer, const SDL_FRect &rect, const SDL_Col
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
     SDL_RenderFillRect(renderer, &rect);
 }
+// Generate enemy
+void Game::updateEnimies(float delta)
+{
+    for (Enemy &enemy : enemies)
+    {
+        enemy.updateEnemy(delta); // Think about enemies[0].updateEnemy(delta);
+    }
+}
 
-// void Game::updatePLayer(Player &player, float delta)
-// {
-//     const auto *key = SDL_GetKeyboardState(nullptr);
-//     if (key[SDL_SCANCODE_W])
-//     {
-//         player.rect.y -= player.PLAYER_SPEED * delta;
-//     }
-//     if (key[SDL_SCANCODE_S])
-//     {
-//         player.rect.y += player.PLAYER_SPEED * delta;
-//     }
-//     if (key[SDL_SCANCODE_D])
-//     {
-//         player.rect.x += player.PLAYER_SPEED * delta;
-//     }
-//     if (key[SDL_SCANCODE_A])
-//     {
-//         player.rect.x -= player.PLAYER_SPEED * delta;
-//     }
-//     player.rect.x = SDL_clamp(player.rect.x, 0.0f, WINDOW_W - player.PLAYER_W);
-//     player.rect.y = SDL_clamp(player.rect.y, 0.0f, WINDOW_H - player.PLAYER_H);
-// }
+void Game::fireLaser()
+{
+    for (Laser &laser : lasers)
+    {
+        if (!laser.active)
+        {
+            laser.fireLaser(player.rect);
+            return; // One laser per press
+        }
+    }
+}
+
+void Game::updateLaser(float delta)
+{
+    for (Laser &laser : lasers)
+    {
+        if (!laser.active)
+        {
+            continue;
+        }
+        laser.rect.x += laser.LASER_SPEED * delta;
+        if (laser.rect.x > WINDOW_W)
+        {
+            laser.active = false;
+        }
+    }
+}
+
+bool Game::rectsOverlap(const SDL_FRect &a, const SDL_FRect &b)
+{
+
+    bool overlapX = (a.x < b.x + b.w) && (a.x + b.w > b.x);
+    bool overlapY = (a.y < b.y + b.h) && (a.y + b.h > b.y);
+    return overlapX && overlapY;
+}
+
+void Game::checkLaserHits()
+{
+    for (Laser &laser : lasers)
+    {
+        if (!laser.active)
+        {
+            continue;
+        }
+        for (Enemy &enemy : enemies)
+        {
+            if (enemy.active && rectsOverlap(laser.rect, enemy.rect))
+            {
+                enemy.active = false;
+                laser.active = false;
+                score += POINTS_PER_HIT;
+                SDL_Log("Hit! Score: %d", score);
+                break;
+            }
+        }
+    }
+}
+
+void Game::checkPlayerhits()
+{
+    for (Enemy &enemy : enemies)
+    {
+        if (enemy.active && rectsOverlap(enemy.rect, player.rect))
+        {
+            enemy.active = false;
+            player.lives--;
+            SDL_Log("Lives left: %d", player.lives);
+            if (player.lives <= 0)
+            {
+                gameOver = true;
+                if (score > highScore)
+                {
+                    highScore = score;
+                }
+                SDL_Log("Game over! Score: %d, best: %d. Press R to restart!", score, highScore);
+                return;
+            }
+        }
+    }
+}
