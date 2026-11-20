@@ -1,4 +1,4 @@
-## Memory: The Stack and the Heap
+# Memory: The Stack and the Heap
 
 every variable in every program has lived somewhere in the computer's memory. 
 
@@ -45,3 +45,33 @@ An address on its own isn't much use. WE want to read or write the value that li
 **Note**: 
 - A reference is another name.
 - A pointer holds an address.
+
+
+# Smart Pointers
+
+Everything that goes wrong with raw pointers, from the leaks to the dangling pointers and the double trees, comes from having to match every `new` with exactly one `delete`, by hand. A smart pointer solves that. 
+
+It's a small object that holds a raw pointer and does the cleanup for you: when the smart pointer goes away, it gives the memory back automatically. That measn no manual `delete`, no leaks from early returns, and no dangling pointers from forgetting to null things out.
+
+Smart pointers come from the standard library, in the `<memory>` header. 
+
+A smart pointer can point at any type, so you say which type in angle bracket, as in `std::unique_ptr<int>`, 
+
+## unique_ptr
+
+there's exactly one `unique_ptr` for the object at any time, and when that `unique_ptr` goes away, the object goes with it. 
+
+`std::make_unique<int>(100)` creates an int on the heap, sets it to 100, and wraps it in a `unique_ptr`.
+
+Because unique_ptr has exactly one object, there copying has to switched off on purpose. Another way to hands the object oer from one owner to anther, use `move(...)`
+
+### When should you use a `unique_ptr`?
+The short answer is: by default. Most of the time, when you create something on the heap, there's a single clear owner for it. It 's as fast as a raw pointer, it's safe, and it makes your intent obvious to anyone reading. 
+
+## shared_ptr
+
+Sometimes ownership really is shared. Several parts of a program hold on to the same object, and it should only go away when the last of them is finished with it. That's what `std::shared_ptr` is for. 
+
+A `shared_ptr` keeps a count of how many `shared_ptr` values point at the same object. Each time you copy one, the count goes up, and each time one goes away, the count goes down. When it reaches zero, nobody is left holding the object, so it's destroyed.
+
+use `use_count()` to keep trach on how many owners it has. 
