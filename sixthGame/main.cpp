@@ -43,13 +43,27 @@ bool loadTextures(SDL_Renderer *renderer, Textures &t)
     t.timesUp = loadTexture(renderer, "assets/timesUp.png");
     return t.grass && t.holdFront && t.holeBack && t.mole && t.mallet && t.moleBonked && t.star && t.title && t.timesUp;
 }
-void destroyTexxture(SDL_Texture *&texture)
+void destroyTexture(SDL_Texture *&texture)
 {
     if (texture != nullptr)
     {
         SDL_DestroyTexture(texture);
         texture = nullptr;
     }
+}
+// Destroy every picture: safe even if some of them never loaded
+void destroyTextures(Textures &t)
+{
+    destroyTexture(t.grass);
+    destroyTexture(t.holeBack);
+    destroyTexture(t.holdFront);
+    destroyTexture(t.mole);
+    destroyTexture(t.moleBonked);
+    destroyTexture(t.mallet);
+    destroyTexture(t.star);
+    destroyTexture(t.star);
+    destroyTexture(t.title);
+    destroyTexture(t.timesUp);
 }
 int main(int argc, char *argv[])
 {
@@ -73,7 +87,31 @@ int main(int argc, char *argv[])
         SDL_Quit();
         return 1;
     }
+    // Show each frame in step with the monitor's refresh
     SDL_SetRenderVSync(renderer, 1);
+
+    // Let see-through colours belnd with whatever is behind them
+    SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+    // The window's incon is a surface: a picture in ordinary memory
+    SDL_Surface *icon = IMG_Load("assets/icon.png");
+    if (icon != nullptr)
+    {
+        SDL_SetWindowIcon(window, icon);
+        SDL_DestroySurface(icon); // The window keeps its own copy
+    }
+
+    // Load every pciture, or tidy up and stop if any of them is missing
+    Textures textures;
+    if (!loadTextures(renderer, textures))
+    {
+        destroyTextures(textures); // The ones that did load
+        SDL_DestroyRenderer(renderer);
+        SDL_DestroyWindow(window);
+        SDL_Quit();
+        return 1;
+    }
+    Uint64 lastTime = SDL_GetTicks();
     bool running = true;
     SDL_Event event;
     while (running)
@@ -84,11 +122,28 @@ int main(int argc, char *argv[])
             {
                 running = false;
             }
-            if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE)
+            if (event.type == SDL_EVENT_KEY_DOWN && !event.key.repeat)
             {
-                running = false;
+                if (event.key.key == SDLK_ESCAPE)
+                {
+                    running = false;
+                }
             }
         }
+        Uint64 now = SDL_GetTicks();
+        float delta = (now - lastTime) / 1000.0f;
+        lastTime = now;
+        //Precondition: if detla time is greater than tenth of second
+        if (delta > MAX_DELTA)
+        {
+            //Capped it.
+            delta = MAX_DELTA;
+        }
+        // Draw the frame, starting with the grass.
+        //This function draws texture over and over.
+        //first nullptr means drawing all of it. second nullptr means drawing the whole window.
+        SDL_RenderTextureTiled(renderer, textures.grass, nullptr, 1.0f, nullptr);
+        SDL_RenderPresent(renderer);
     }
     SDL_DestroyWindow(window);
     SDL_DestroyRenderer(renderer);
