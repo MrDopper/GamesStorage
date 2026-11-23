@@ -7,6 +7,36 @@ const int WINDOW_W = 800;
 const int WINDOW_H = 600;
 const float MAX_DELTA = 0.1f; // The longest frame we'll allow, in seconds
 
+// The holes: three rows of three
+const int HOLE_COLS = 3;
+const int HOLE_ROWS = 3;
+const int HOLE_COUNT = HOLE_COLS * HOLE_ROWS;
+const float HOLE_W = 200.0f; // Giving pixels
+const float HOLE_H = 100.0f;
+// Set up the position for the first hole
+const float FIRST_HOLE_X = 70.0f;
+const float FIRST_HOLE_Y = 176.0f;
+const float HOLE_GAP_X = 230.0f;
+const float HOLE_GAP_Y = 160.0f;
+
+//The five things a mole can be doing
+enum class MoleState{
+    Hidden,
+    Rising,
+    Up,
+    Bonked,
+    Sinking
+};
+//ONe hole, and the mole that lives in it
+struct Hole{
+    float x; //The hole's top-left corner on screen
+    float y;
+    MoleState state;
+    float shown; //How many pixels of the mole are showing
+    float timer; //Seconds left while it's Up or Boned
+    float startTimer; //second left on this hole's star
+    float facingLeft; //true to draw the mole flipped
+};
 // Every picture in the game, each one starting as "not loaded yet"
 struct Textures
 {
@@ -133,15 +163,15 @@ int main(int argc, char *argv[])
         Uint64 now = SDL_GetTicks();
         float delta = (now - lastTime) / 1000.0f;
         lastTime = now;
-        //Precondition: if detla time is greater than tenth of second
+        // Precondition: if detla time is greater than tenth of second
         if (delta > MAX_DELTA)
         {
-            //Capped it.
+            // Capped it.
             delta = MAX_DELTA;
         }
         // Draw the frame, starting with the grass.
-        //This function draws texture over and over.
-        //first nullptr means drawing all of it. second nullptr means drawing the whole window.
+        // This function draws texture over and over.
+        // first nullptr means drawing all of it. second nullptr means drawing the whole window.
         SDL_RenderTextureTiled(renderer, textures.grass, nullptr, 1.0f, nullptr);
         SDL_RenderPresent(renderer);
     }
