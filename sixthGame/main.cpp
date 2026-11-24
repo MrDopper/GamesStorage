@@ -19,23 +19,38 @@ const float FIRST_HOLE_Y = 176.0f;
 const float HOLE_GAP_X = 230.0f;
 const float HOLE_GAP_Y = 160.0f;
 
-//The five things a mole can be doing
-enum class MoleState{
+// The moles, and the round
+const float MOLE_W = 120.0f;        // mole.png is 120 to 140
+const float MOLE_OFFSET_X = 40.0f;  // the mole's left edge, from the hole's
+const float MOLE_BASE_Y = 70.0f;    // Its bottom edge, hidden by the lip
+const float MOLE_MAX_SHOW = 130.0f; // pixels showing when it's fully up
+const float RISE_SPEED = 520.0f;    // pixels per second. going up and down
+const float ROUND_TIME = 60.0f;     // second in a round
+const float START_UP_TIME = 1.2f;   // how long a mole waits, at the start
+const float END_UP_TIME = 0.55;     // and by the end of the round
+const float START_SPAWN_GAP = 0.9f; // seconds between moles, at the start
+const float END_SPAWN_GAP = 0.45f;  // and by the end
+const int SPAWN_TRIES = 10;         // random holes to try for a new mole
+
+// The five things a mole can be doing
+enum class MoleState
+{
     Hidden,
     Rising,
     Up,
     Bonked,
     Sinking
 };
-//ONe hole, and the mole that lives in it
-struct Hole{
-    float x; //The hole's top-left corner on screen
+// ONe hole, and the mole that lives in it
+struct Hole
+{
+    float x; // The hole's top-left corner on screen
     float y;
     MoleState state;
-    float shown; //How many pixels of the mole are showing
-    float timer; //Seconds left while it's Up or Boned
-    float startTimer; //second left on this hole's star
-    float facingLeft; //true to draw the mole flipped
+    float shown;      // How many pixels of the mole are showing
+    float timer;      // Seconds left while it's Up or Boned
+    float startTimer; // second left on this hole's star
+    float facingLeft; // true to draw the mole flipped
 };
 // Every picture in the game, each one starting as "not loaded yet"
 struct Textures
@@ -49,6 +64,17 @@ struct Textures
     SDL_Texture *star = nullptr;
     SDL_Texture *title = nullptr;
     SDL_Texture *timesUp = nullptr;
+};
+
+// Everything that changes while you play
+struct Game
+{
+    Hole holes[HOLE_COUNT];
+    int score;
+    float timeLeft;
+    float spawnTimer; // seconds until the next mole comes up
+    float swingTimer; // seconds left in the mallet's swing
+    bool gameOver;
 };
 
 SDL_Texture *loadTexture(SDL_Renderer *renderer, const char *path)
@@ -95,6 +121,106 @@ void destroyTextures(Textures &t)
     destroyTexture(t.title);
     destroyTexture(t.timesUp);
 }
+
+// Put everything hol in its place, send every mole down, and reset
+void resetGame(Game &game)
+{
+    for (int i = 0; i < HOLE_COUNT; i++)
+    {
+        Hole &hole = game.holes[i];
+        int col = i % HOLE_COLS;
+        int row = i / HOLE_COLS;
+        hole.x = FIRST_HOLE_X + col * HOLE_GAP_X;
+        hole.y = FIRST_HOLE_Y + row * HOLE_GAP_Y;
+        hole.state = MoleState::Hidden;
+        hole.shown = 0.0f;
+        hole.timer = 0.0f;
+        hole.startTimer = 0.0f;
+        hole.facingLeft = false;
+    }
+    game.score = 0;
+    game.timeLeft = ROUND_TIME;
+    game.spawnTimer = START_SPAWN_GAP;
+    game.swingTimer = 0.0f;
+    game.gameOver = false;
+}
+
+// A number partway from a to b: a when t is 0, and b when t is 1
+/*lerp is short for linear interpolation, finds the number
+that's a fraction t on the way from a to b. When t is 0, the answer is a,
+and when it's 1, the answer is b.
+In between, b - a is the whole distance, t times that is the part
+of it we've convered, and adding a starts up from the right place.
+
+precondition: Halfway through the round
+lerp(1.2f, 0.55f, 0.5f) is 0.875, so the mole waits for 0.875 seconds
+*/
+float lerp(float a, float b, float t)
+{
+    return a + (b - a) * t;
+}
+
+// send a mole up out of a random empty hole, if one turns up quickly
+void spawnMole(Game &game)
+{
+    for (int attempt = 0; attempt < SPAWN_TRIES; attempt++)
+    {
+        Hole &hole = game.holes[SDL_rand(HOLE_COUNT)];
+        if (hole.state == MoleState::Hidden)
+        {
+            hole.state = MoleState::Rising;
+            hole.facingLeft = (SDL_rand(2) == 0);
+            return;
+        }
+    }
+}
+
+// Move one mole through its life: up, a wait (or a bonk), and down again
+void updateHole(Hole &hole, float delta, float upTime)
+{
+    switch (hole.state)
+    {
+    case MoleState::Hidden:
+        break;
+
+    case MoleState::Rising:
+        hole.shown += RISE_SPEED * delta;
+        if (hole.shown >= MOLE_MAX_SHOW)
+        {
+            hole.shown = MOLE_MAX_SHOW;
+            hole.state = MoleState::Up;
+            hole.timer = upTime;
+        }
+        break;
+    case MoleState::Up:
+    case MoleState::Bonked:
+        hole.timer -= delta;
+        if (hole.timer <= 0.0f)
+            hole.state = MoleState::Sinking;
+        break;
+
+    case MoleState::Sinking:
+        hole.shown -= RISE_SPEED * delta;
+        if (hole.shown <= 0.0f)
+        {
+            hole.shown = 0.0f;
+            hole.state = MoleState::Hidden;
+        }
+        break;
+    }
+    if (hole.startTimer > 0.0f)
+    {
+        hole.startTimer -= delta;
+    }
+}
+// Draw one hole: its back, then its mole, then its front lip
+void drawHole(SDL_Renderer *renderer, const Textures &t, const Hole &hole)
+{
+    SDL_FRect holeRect = {hole.x, hole.y, HOLE_W, HOLE_H};
+    SDL_RenderTexture(renderer, t.holeBack, nullptr, &holeRect);
+    SDL_RenderTexture(renderer, t.holdFront, nullptr, &holeRect);
+}
+
 int main(int argc, char *argv[])
 {
     if (!SDL_Init(SDL_INIT_VIDEO))
@@ -160,6 +286,9 @@ int main(int argc, char *argv[])
                 }
             }
         }
+        // The whole game, in its starting state
+        Game game{}; // creates the gam with every member set to zero
+        resetGame(game);
         Uint64 now = SDL_GetTicks();
         float delta = (now - lastTime) / 1000.0f;
         lastTime = now;
@@ -173,6 +302,8 @@ int main(int argc, char *argv[])
         // This function draws texture over and over.
         // first nullptr means drawing all of it. second nullptr means drawing the whole window.
         SDL_RenderTextureTiled(renderer, textures.grass, nullptr, 1.0f, nullptr);
+        for (int i = 0; i < HOLE_COUNT; i++)
+            drawHole(renderer, textures, game.holes[i]);
         SDL_RenderPresent(renderer);
     }
     SDL_DestroyWindow(window);
