@@ -1,3 +1,10 @@
+/* Name: Whack-a-Mole
+Project description: Have you ever get furious because your garden is infested with moles?
+This game will help you relief your stress by whacking a mole.
+Created by: Jackson Vi
+Version: V.0.0.1
+Libraries: SDL3, SDL3_Image
+*/
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <SDL3_image/SDL_image.h>
@@ -160,6 +167,16 @@ float lerp(float a, float b, float t)
     return a + (b - a) * t;
 }
 
+// Where the showing part of a hole's mole is, on screen
+SDL_FRect moleRect(const Hole &hole)
+{
+    SDL_FRect rect;
+    rect.x = hole.x + MOLE_OFFSET_X;
+    rect.y = hole.y + MOLE_BASE_Y - hole.shown;
+    rect.w = MOLE_W;
+    rect.h = hole.shown;
+    return rect;
+}
 // send a mole up out of a random empty hole, if one turns up quickly
 void spawnMole(Game &game)
 {
@@ -218,9 +235,53 @@ void drawHole(SDL_Renderer *renderer, const Textures &t, const Hole &hole)
 {
     SDL_FRect holeRect = {hole.x, hole.y, HOLE_W, HOLE_H};
     SDL_RenderTexture(renderer, t.holeBack, nullptr, &holeRect);
+    if (hole.shown > 0.0f)
+    {
+        SDL_FRect src = {0.0f, 0.0f, MOLE_W, hole.shown};
+        SDL_FRect dst = moleRect(hole);
+
+        bool bonked = hole.state == MoleState::Bonked;
+        SDL_Texture *picture = bonked ? t.moleBonked : t.mole;
+        SDL_FlipMode flip = hole.facingLeft ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE;
+        SDL_RenderTextureRotated(renderer, picture, &src, &dst, 0.0, nullptr, flip);
+    }
     SDL_RenderTexture(renderer, t.holdFront, nullptr, &holeRect);
 }
 
+// Move the whole game on by one frame
+void updateGame(Game &game, float delta)
+{
+    if (game.swingTimer > 0.0f)
+    {
+        game.swingTimer -= delta;
+
+        // How far through the round we are: 0 at the start, and 1 at the end
+        float progress = 1.0f - game.timeLeft / ROUND_TIME;
+        float upTime = lerp(START_UP_TIME, END_UP_TIME, progress);
+
+        for (int i = 0; i < HOLE_COUNT; i++)
+        {
+            updateHole(game.holes[i], delta, upTime);
+        }
+        if (game.gameOver)
+        {
+            return; // The moles finish what they're doing, but no more come
+        }
+        game.timeLeft -= delta;
+        if (game.timeLeft <= 0.0f)
+        {
+            game.timeLeft = 0.0f;
+            game.gameOver = true;
+            return;
+        }
+        game.spawnTimer -= delta;
+        if (game.spawnTimer <= 0.0f)
+        {
+            spawnMole(game);
+            game.spawnTimer = lerp(START_SPAWN_GAP, END_SPAWN_GAP, progress);
+        }
+    }
+}
 int main(int argc, char *argv[])
 {
     if (!SDL_Init(SDL_INIT_VIDEO))
@@ -298,6 +359,7 @@ int main(int argc, char *argv[])
             // Capped it.
             delta = MAX_DELTA;
         }
+        updateGame(game, delta);
         // Draw the frame, starting with the grass.
         // This function draws texture over and over.
         // first nullptr means drawing all of it. second nullptr means drawing the whole window.
